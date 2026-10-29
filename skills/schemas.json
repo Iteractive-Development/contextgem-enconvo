@@ -1,0 +1,69 @@
+[
+  {
+    "name": "extract",
+    "title": "ContextGem Extract",
+    "description": "Extract structured data from text, a pasted document or an attached file. Input: JSON {\"text\"|\"file_path\", \"aspects\":[{\"name\",\"description\"}], \"concepts\":[{\"type\",\"name\",\"description\"}], \"engine\":\"llm\"|\"decision_model\"|\"auto\", \"pipeline\":\"<saved name>\"}. Attached files are used as the document (needs the docling extra).",
+    "routePath": "contextgem-enconvo/extract"
+  },
+  {
+    "name": "doctor",
+    "title": "ContextGem Doctor",
+    "description": "Check the Python environment, the ContextGem install, the optional docling extra and which Enconvo LLM provider would run, and print what to fix when something is off. Run with the input setup to create or repair the environment in one shot.",
+    "routePath": "contextgem-enconvo/doctor"
+  },
+  {
+    "name": "pipeline_delete",
+    "title": "pipeline_delete",
+    "description": "Delete a saved extraction pipeline by name. @param {Request} request - Request object, body is {@link PipelineDeleteParams}",
+    "routePath": "contextgem-enconvo/pipeline_delete",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "pipeline_list",
+    "title": "pipeline_list",
+    "description": "List the saved extraction pipelines with their description, default engine and how many aspects and concepts each holds. @param {Request} request - Request object; the body is unused",
+    "routePath": "contextgem-enconvo/pipeline_list",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "pipeline_save",
+    "title": "pipeline_save",
+    "description": "Save an extraction spec (aspects and/or concepts) under a name so extract can run it with just {pipeline, text}. Saving an existing name replaces it. @param {Request} request - Request object, body is {@link PipelineSaveParams}",
+    "routePath": "contextgem-enconvo/pipeline_save",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "setup",
+    "title": "setup",
+    "description": "Create or repair the plugin's private Python environment (uv-managed venv under the plugin's support directory) and install contextgem into it. Idempotent: running it again upgrades contextgem. Takes minutes with docling. @param {Request} request - Request object, body is {@link SetupParams}",
+    "routePath": "contextgem-enconvo/setup",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "status",
+    "title": "status",
+    "description": "Read-only health check: is a supported Python present, is the plugin's venv built, is contextgem (and the optional docling extra) importable, is the runner bundled, and which Enconvo LLM provider and model would run and whether a decision model is set. Never returns a key. @param {Request} request - Request object; the body is unused",
+    "routePath": "contextgem-enconvo/status",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

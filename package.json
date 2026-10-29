@@ -1,0 +1,250 @@
+{
+  "$schema": "https://enconvo.com/schemas/extension.json",
+  "name": "contextgem-enconvo",
+  "version": "1.0.0",
+  "title": "ContextGem",
+  "description": "Extract structured data from text and documents through the ContextGem framework: aspects and typed concepts (strings, booleans, numbers, dates, ratings, labels, JSON objects) with source references, justifications and probabilities, using the LLM providers and credentials already set up in Enconvo, or a decision model such as Jev for closed questions.",
+  "short_description": "Structured document extraction using your Enconvo LLMs",
+  "author": "Iteractive Development",
+  "homepage": "https://iteractive.dev",
+  "icon": "icon.png",
+  "license": "MIT",
+  "type": "module",
+  "categories": [
+    "Data & Analytics",
+    "Productivity"
+  ],
+  "keywords": [
+    "contextgem",
+    "extraction",
+    "structured data",
+    "documents",
+    "pdf",
+    "docling",
+    "aspects",
+    "concepts",
+    "decision models",
+    "jev",
+    "enconvo llm"
+  ],
+  "commands": [
+    {
+      "name": "decision_credentials",
+      "title": "ContextGem Decision Model Key",
+      "description": "Store the API key for the optional decision model (e.g. a TypeSafe key for Jev) through Enconvo's standard credential management: encrypted at rest and masked. The extraction LLM needs no key here; it uses the provider you already set up in Enconvo.",
+      "commandType": "credentials-provider",
+      "mode": "no-view",
+      "private": true,
+      "preferences": [
+        {
+          "name": "apiKey",
+          "title": "Decision Model API Key",
+          "description": "API key for the Decision Model preference (e.g. a TypeSafe key for typesafe/jev-latest).",
+          "type": "password",
+          "required": true,
+          "default": "",
+          "placeholder": "********"
+        }
+      ]
+    },
+    {
+      "name": "extract",
+      "title": "ContextGem Extract",
+      "description": "Extract structured data from text, a pasted document or an attached file. Input: JSON {\"text\"|\"file_path\", \"aspects\":[{\"name\",\"description\"}], \"concepts\":[{\"type\",\"name\",\"description\"}], \"engine\":\"llm\"|\"decision_model\"|\"auto\", \"pipeline\":\"<saved name>\"}. Attached files are used as the document (needs the docling extra).",
+      "commandType": "command",
+      "mode": "no-view",
+      "keywords": [
+        "extract",
+        "structured",
+        "document",
+        "aspect",
+        "concept",
+        "pdf"
+      ],
+      "preferences": [
+        {
+          "name": "llm",
+          "title": "LLM Model",
+          "description": "The Enconvo LLM provider and model that run the extraction, using the key you already manage under Settings › Credentials. Defaults to your default LLM.",
+          "type": "provider",
+          "providerCategory": "llm",
+          "required": false,
+          "default": "default"
+        },
+        {
+          "name": "decision_credentials",
+          "title": "Decision Model Key",
+          "description": "The decision-model API key to use, when a decision model is set",
+          "type": "extension",
+          "extensionType": "credentials-provider",
+          "extensionFilter": {
+            "targetCommands": [
+              "contextgem-enconvo|decision_credentials"
+            ]
+          },
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "doctor",
+      "title": "ContextGem Doctor",
+      "description": "Check the Python environment, the ContextGem install, the optional docling extra and which Enconvo LLM provider would run, and print what to fix when something is off. Run with the input setup to create or repair the environment in one shot.",
+      "commandType": "command",
+      "mode": "no-view",
+      "keywords": [
+        "setup",
+        "check",
+        "fix",
+        "health",
+        "status"
+      ],
+      "preferences": [
+        {
+          "name": "llm",
+          "title": "LLM Model",
+          "description": "The Enconvo LLM provider and model that run the extraction, using the key you already manage under Settings › Credentials. Defaults to your default LLM.",
+          "type": "provider",
+          "providerCategory": "llm",
+          "required": false,
+          "default": "default"
+        },
+        {
+          "name": "decision_credentials",
+          "title": "Decision Model Key",
+          "description": "The decision-model API key to report on",
+          "type": "extension",
+          "extensionType": "credentials-provider",
+          "extensionFilter": {
+            "targetCommands": [
+              "contextgem-enconvo|decision_credentials"
+            ]
+          },
+          "required": false
+        }
+      ]
+    }
+  ],
+  "preferences": [
+    {
+      "name": "decision_model",
+      "title": "Decision Model",
+      "description": "Optional LiteLLM decision-model string for closed questions (boolean, label and rating concepts and aspects), e.g. typesafe/jev-latest. Used by engine auto and decision_model; leave empty to send everything to the LLM.",
+      "type": "textfield",
+      "default": "",
+      "placeholder": "typesafe/jev-latest"
+    },
+    {
+      "name": "python_bin",
+      "title": "Python Binary",
+      "description": "Python used to build the plugin's private environment. Empty auto-detects a Python 3.11-3.14; python3, python3.12 or an absolute path also work. Only read when the environment is created.",
+      "type": "textfield",
+      "default": "",
+      "placeholder": "auto-detect"
+    },
+    {
+      "name": "install_docling",
+      "title": "Install Docling (file support)",
+      "description": "Also install contextgem[docling] during setup so PDF, DOCX, PPTX, XLSX and HTML files can be extracted. Large download (PyTorch); without it the plugin extracts from text only.",
+      "type": "checkbox",
+      "default": false
+    },
+    {
+      "name": "timeout_seconds",
+      "title": "Extraction Timeout (seconds)",
+      "description": "How long one extraction may run before it is stopped (30-3600). Large documents and many aspects take longer.",
+      "type": "textfield",
+      "default": "600",
+      "placeholder": "600"
+    }
+  ],
+  "review": {
+    "test_cases": {
+      "positive": [
+        {
+          "description": "Doctor reports the environment honestly.",
+          "prompt": "Run contextgem-enconvo|doctor. Expect checks for Python 3.11-3.14, the plugin venv, contextgem (with its version), docling, the bundled runner, and the Enconvo LLM provider that would run (provider, model, whether a key is stored), ending with an Overall line.",
+          "expected_behavior": "Every line is a pass or fail with the exact fix; Overall says ready only when contextgem is importable.",
+          "tools_triggered": "contextgem-enconvo|doctor"
+        },
+        {
+          "description": "Setup builds a private environment and is idempotent.",
+          "prompt": "POST {} to http://localhost:54535/api/contextgem-enconvo/setup, then POST {} again. Expect ok:true with the steps taken, then a second run that reuses the venv.",
+          "expected_behavior": "A uv-managed venv under the plugin's support directory with contextgem importable; the second call changes nothing and still succeeds.",
+          "tools_triggered": "contextgem-enconvo/setup"
+        },
+        {
+          "description": "A dry run validates a spec without calling any model.",
+          "prompt": "POST {\"text\":\"Invoice INV-9 from Acme, total $40.\",\"dry_run\":true,\"concepts\":[{\"type\":\"string\",\"name\":\"invoice_id\",\"description\":\"the invoice id\"},{\"type\":\"numerical\",\"name\":\"total\",\"description\":\"grand total\",\"numeric_type\":\"float\"}]} to /api/contextgem-enconvo/extract.",
+          "expected_behavior": "ok:true, dry_run:true and a plan listing the document paragraphs and both concepts, with no model request made.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "Extraction returns typed items with evidence.",
+          "prompt": "With an Enconvo LLM provider configured, POST a short contract with concepts [{\"type\":\"boolean\",\"name\":\"auto_renews\",\"description\":\"whether the term renews automatically\",\"add_justifications\":true}], add_references:true and llm_provider \"anthropic\" to /api/contextgem-enconvo/extract.",
+          "expected_behavior": "The Enconvo provider and its stored credential are used with no key in the request; each concept returns items with value, justification and reference paragraphs, and stats carry token usage.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "Saved pipelines are reusable by name.",
+          "prompt": "POST a name and concepts to /api/contextgem-enconvo/pipeline_save, list them with pipeline_list, run extract with {\"pipeline\":\"<name>\",\"text\":\"...\"}, then pipeline_delete.",
+          "expected_behavior": "The pipeline appears in the list, extract runs it without repeating the spec, and it is gone after delete.",
+          "tools_triggered": "contextgem-enconvo/pipeline_save, contextgem-enconvo/pipeline_list, contextgem-enconvo/pipeline_delete"
+        }
+      ],
+      "negative": [
+        {
+          "description": "A request with no document is refused cleanly.",
+          "prompt": "POST {\"concepts\":[{\"type\":\"string\",\"name\":\"x\",\"description\":\"y\"}]} to /api/contextgem-enconvo/extract.",
+          "expected_behavior": "HTTP 400 with code BAD_INPUT saying to provide text or file_path; never a hang or a stack trace.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "A malformed spec fails with the exact field.",
+          "prompt": "POST a rating concept without rating_scale and a label concept without labels to /api/contextgem-enconvo/extract with dry_run:true.",
+          "expected_behavior": "HTTP 400 with code BAD_SPEC naming the offending concept and what to add.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "A missing environment points at setup.",
+          "prompt": "With the plugin's venv deleted, POST any valid extract request.",
+          "expected_behavior": "HTTP 409 with code SETUP_REQUIRED and a hint to call the setup route or run ContextGem Doctor with input setup.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "A decision model is not asked open questions.",
+          "prompt": "POST a string concept with engine decision_model to /api/contextgem-enconvo/extract.",
+          "expected_behavior": "HTTP 400 BAD_SPEC explaining that a decision model extracts only boolean, label and rating concepts, and to use engine auto or llm.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "Secrets never appear in output.",
+          "prompt": "Run an extraction through a provider whose stored key is wrong and read the error response.",
+          "expected_behavior": "The error describes the failure with the API key redacted; the key is never written to disk, logged or echoed.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "A provider ContextGem cannot reach is explained, not guessed at.",
+          "prompt": "POST an extract request with llm_provider set to a provider with no base URL and no LiteLLM equivalent, or to a name that does not exist.",
+          "expected_behavior": "HTTP 409 with code LLM_UNAVAILABLE naming the provider and where to change it; never a hang or a request with no model.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        }
+      ]
+    },
+    "demo_recording_url": "https://iteractive.dev"
+  },
+  "scripts": {
+    "build": "enconvo plugin build",
+    "dev": "enconvo plugin build --dev",
+    "validate": "enconvo plugin validate",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@enconvo/api": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  }
+}
