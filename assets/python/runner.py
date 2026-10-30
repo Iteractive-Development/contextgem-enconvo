@@ -413,14 +413,37 @@ def ser_aspect(aspect, depth=0):
 
 
 def model_stats(model):
+    """Token, call and cost totals only: the raw usage records hold every prompt and the document text."""
     stats = {}
-    for attr in ("usage", "cost", "usage_stats", "cost_stats"):
-        val = getattr(model, attr, None)
-        if val:
-            try:
-                stats[attr] = ser_value(val)
-            except Exception:
-                pass
+    try:
+        usage = [ser_value(u) for u in (model.get_usage() or [])]
+        rows = []
+        for u in usage:
+            tokens = u.get("usage") or {}
+            rows.append(
+                {
+                    "model": u.get("model"),
+                    "role": u.get("role"),
+                    "input_tokens": tokens.get("input"),
+                    "output_tokens": tokens.get("output"),
+                    "cache_read_tokens": tokens.get("cache_read"),
+                    "cache_write_tokens": tokens.get("cache_write"),
+                    "calls": len(tokens.get("calls") or []),
+                }
+            )
+        if rows:
+            stats["usage"] = rows
+    except Exception:
+        pass
+    try:
+        costs = []
+        for c in model.get_cost() or []:
+            cost = ser_value(getattr(c, "cost", None)) or {}
+            costs.append({"model": getattr(c, "model", None), "role": getattr(c, "role", None), **cost})
+        if costs:
+            stats["cost"] = costs
+    except Exception:
+        pass
     return stats or None
 
 
