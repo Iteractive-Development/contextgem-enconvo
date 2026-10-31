@@ -143,7 +143,7 @@
         },
         {
           "description": "Jev answers closed questions through the decision bridge.",
-          "prompt": "With the Decision Engine set to Jev and engine auto, POST a contract clause with a boolean concept (add_justifications true).",
+          "prompt": "With the Decision Engine set to Jev and engine auto, POST a contract clause with a boolean concept.",
           "expected_behavior": "The closed question is relayed to Enconvo Cloud with the app session token; items carry calibrated probabilities, and no TypeSafe key exists anywhere in the plugin.",
           "tools_triggered": "contextgem-enconvo/extract"
         },
@@ -201,6 +201,12 @@
           "description": "Secrets never reach the surface.",
           "prompt": "Force a failure (bad endpoint via llm_options) and read the whole error response.",
           "expected_behavior": "Bridge tokens and any api_key are absent from the response body and from what the runner prints.",
+          "tools_triggered": "contextgem-enconvo/extract"
+        },
+        {
+          "description": "Evidence flags on Jev-extracted targets are rejected up front.",
+          "prompt": "With Decision Engine set to Jev, POST an auto-engine extraction with a boolean concept carrying add_justifications true and dry_run true.",
+          "expected_behavior": "HTTP 400 BAD_SPEC naming the concept and the two fixes (drop the flags or set model_role extractor); no decision is billed.",
           "tools_triggered": "contextgem-enconvo/extract"
         }
       ]

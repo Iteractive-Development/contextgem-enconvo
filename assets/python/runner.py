@@ -485,6 +485,41 @@ def run(job):
                 "Use engine 'auto' or 'llm' for those."
             )
 
+    # A decision model answers without explanations: justifications and references on
+    # anything it will extract fail deep inside ContextGem; reject them here, cheaply.
+    def _decision_evidence_flags():
+        flagged = []
+        if not (engine in ("decision_model", "auto") and dm_configured):
+            return flagged
+
+        def check_concepts(specs):
+            for c in specs or []:
+                if (
+                    c.get("type") in CLOSED_CONCEPT_TYPES
+                    and not c.get("model_role")
+                    and (c.get("add_justifications") or c.get("add_references"))
+                ):
+                    flagged.append(str(c.get("name", "concept")))
+
+        def check_aspects(specs):
+            for a in specs or []:
+                if engine == "decision_model" and (a.get("add_justifications") or a.get("add_references")):
+                    flagged.append(str(a.get("name", "aspect")))
+                check_concepts(a.get("concepts"))
+                check_aspects(a.get("aspects") or a.get("sub_aspects"))
+
+        check_concepts(concepts_specs)
+        check_aspects(aspects_specs)
+        return flagged
+
+    flagged = _decision_evidence_flags()
+    if flagged:
+        raise SpecError(
+            "the decision engine (Jev) cannot attach justifications or references; "
+            f"remove add_justifications/add_references from: {', '.join(flagged)}, "
+            "or set model_role 'extractor' on them so the LLM extracts them instead"
+        )
+
     use_group = False
     if engine == "auto" and dm_configured and closed_locs:
         if has_open:
