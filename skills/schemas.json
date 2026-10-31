@@ -8,7 +8,7 @@
   {
     "name": "doctor",
     "title": "ContextGem Doctor",
-    "description": "Check the Python environment, the ContextGem install, the optional docling extra and which Enconvo LLM provider would run, and print what to fix when something is off. Run with the input setup to create or repair the environment in one shot.",
+    "description": "Check the Python environment, the ContextGem install, the optional docling extra, which Enconvo LLM provider would run through the chat bridge, and whether Jev answers closed questions — and print what to fix when something is off. Run with the input setup to create or repair the environment in one shot.",
     "routePath": "contextgem-enconvo/doctor"
   },
   {

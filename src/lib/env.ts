@@ -3,6 +3,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { PreferenceManageUtils } from "@enconvo/api";
+import type { Bridge } from "./bridge";
+import { startChatBridge, startDecisionBridge } from "./bridge";
 import type { ResolvedLlm } from "./llm";
 
 export const EXTENSION_NAME = "contextgem-enconvo";
@@ -52,7 +54,7 @@ export interface RunResult {
     stderr: string;
 }
 
-/** Run a process to completion; `input` goes to stdin (used for jobs that carry API keys, so they never touch disk). */
+/** Run a process to completion; `input` goes to stdin (used for jobs that carry bridge tokens, so they never touch disk). */
 export function run(
     cmd: string,
     args: string[],
@@ -263,30 +265,22 @@ export async function setupEnvironment(opts: { installDocling?: boolean; pythonP
 }
 
 // ---------------------------------------------------------------------------
-// Configuration: preferences and credentials
+// Configuration
 // ---------------------------------------------------------------------------
 
 export interface Config {
-    decision_model: string;
+    /** "jev" routes closed questions to Enconvo's Jev through the decision bridge; "" sends everything to the LLM. */
+    decision_engine: string;
     python_bin: string;
     install_docling: boolean;
     timeout_seconds: number;
-    decision_api_key: string;
 }
+
+type Partial_ = Partial<Config>;
 
 function str(v: unknown): string {
     return typeof v === "string" ? v.trim() : "";
 }
-
-function keyOf(v: unknown): string {
-    if (v && typeof v === "object") {
-        const c = v as Record<string, unknown>;
-        return str(c.apiKey) || str(c.api_key);
-    }
-    return "";
-}
-
-type Partial_ = Partial<Config>;
 
 function flatPrefs(info: unknown): Record<string, unknown> {
     const source = (info ?? {}) as Record<string, unknown>;
@@ -295,16 +289,13 @@ function flatPrefs(info: unknown): Record<string, unknown> {
 
 function readPrefs(prefs: Record<string, unknown>): Partial_ {
     const out: Partial_ = {};
-    if (str(prefs.decision_model)) out.decision_model = str(prefs.decision_model);
+    if (str(prefs.decision_engine) === "jev") out.decision_engine = "jev";
     if (str(prefs.python_bin)) out.python_bin = str(prefs.python_bin);
     const docling = prefs.install_docling;
     if (docling === true || docling === "true" || docling === 1 || docling === "1") out.install_docling = true;
     if (docling === false || docling === "false" || docling === 0 || docling === "0") out.install_docling = false;
     const t = typeof prefs.timeout_seconds === "number" ? prefs.timeout_seconds : parseInt(str(prefs.timeout_seconds), 10);
     if (Number.isFinite(t) && t >= 30 && t <= 3600) out.timeout_seconds = t;
-    // A picked credential account arrives merged into a command's body.
-    const decisionKey = keyOf(prefs.decision_credentials);
-    if (decisionKey) out.decision_api_key = decisionKey;
     return out;
 }
 
@@ -318,21 +309,17 @@ async function readStored(key: string): Promise<Record<string, unknown>> {
 
 /**
  * Resolve the plugin's configuration. A command's request body carries the merged
- * preferences and the picked credential accounts; a Local API route's body does not,
- * so the stored preferences (secrets decrypted in-process) are read through the app.
- * Values in the body always win over stored ones.
+ * preferences; a Local API route's body does not, so the stored preferences are
+ * read through the app. Values in the body always win over stored ones.
  */
 export async function resolveConfig(options: Record<string, unknown> = {}): Promise<Config> {
     const body = readPrefs(options);
-    const stored: Partial_ = readPrefs(await readStored(EXTENSION_NAME));
-    const decisionCred = await readStored(`${EXTENSION_NAME}|decision_credentials`);
-    const storedDecisionKey = str(decisionCred.apiKey);
+    const stored = readPrefs(await readStored(EXTENSION_NAME));
     return {
-        decision_model: body.decision_model ?? stored.decision_model ?? "",
+        decision_engine: body.decision_engine ?? stored.decision_engine ?? "",
         python_bin: body.python_bin ?? stored.python_bin ?? "",
         install_docling: body.install_docling ?? stored.install_docling ?? false,
         timeout_seconds: body.timeout_seconds ?? stored.timeout_seconds ?? 600,
-        decision_api_key: body.decision_api_key ?? storedDecisionKey ?? "",
     };
 }
 
@@ -355,11 +342,11 @@ export interface StatusReport {
     contextgem: { installed: boolean; version?: string };
     docling: boolean;
     runner_bundled: boolean;
-    llm: { provider?: string; model?: string; api_base?: string; key_set?: boolean; error?: string };
-    decision_model: { model: string; key_set: boolean };
+    llm: { provider?: string; model?: string; error?: string };
+    decision: { engine: string };
 }
 
-/** `llm` is what resolveLlm found (or why it found nothing), so the report shows the provider actually in use. */
+/** `llm` is what resolveLlm found (or why it found nothing). */
 export async function status(config: Config, llm: StatusReport["llm"]): Promise<StatusReport> {
     const py = await detectPython(config.python_bin);
     const uv = (await findUv()) !== null;
@@ -375,7 +362,7 @@ export async function status(config: Config, llm: StatusReport["llm"]): Promise<
         docling,
         runner_bundled: runnerPresent(),
         llm,
-        decision_model: { model: config.decision_model, key_set: !!config.decision_api_key },
+        decision: { engine: config.decision_engine || "none" },
     };
 }
 
@@ -393,8 +380,11 @@ export interface ExtractInput {
     segmentation?: string;
     llm_provider?: string;
     llm_model?: string;
+    /** Direct LiteLLM access (model, api_base, api_key, temperature, …): bypasses the Enconvo provider and both bridges. */
     llm_options?: Record<string, unknown>;
-    decision_model?: Record<string, unknown>;
+    /** 0-1: how sure Jev must be before a yes is a yes (decision engine only). */
+    decision_threshold?: number;
+    timeout_seconds?: number;
 }
 
 export interface RunnerResult {
@@ -454,8 +444,26 @@ export function validateInput(input: ExtractInput): void {
     }
 }
 
-/** Build the runner job from the request plus resolved configuration. Request values win over preferences. */
-export function buildJob(input: ExtractInput, config: Config, resolved?: ResolvedLlm): Record<string, unknown> {
+interface BuiltJob {
+    job: Record<string, unknown>;
+    /** true when llm_options named its own model, so neither bridge is used. */
+    direct: boolean;
+    /** true when the decision bridge is part of the job. */
+    decisions: boolean;
+}
+
+/**
+ * Build the runner job. In the default mode the LLM and (when enabled) Jev are
+ * reached through localhost bridges, so their tokens are the only secrets in the
+ * job and live for the job's lifetime. With `llm_options.model` set, the request
+ * brings its own endpoint and both bridges are skipped.
+ */
+export function buildJob(
+    input: ExtractInput,
+    config: Config,
+    llm: ResolvedLlm,
+    bridges: { chat: { url: string; token: string }; decisions: { url: string; token: string } | null }
+): BuiltJob {
     const job: Record<string, unknown> = {};
     if (input.text) job.text = input.text;
     if (input.file_path) job.file_path = input.file_path.trim();
@@ -465,30 +473,40 @@ export function buildJob(input: ExtractInput, config: Config, resolved?: Resolve
     if (input.dry_run) job.dry_run = true;
     if (input.segmentation) job.segmentation = input.segmentation;
 
-    const llm: Record<string, unknown> = {
-        model: resolved?.model,
-        api_key: resolved?.api_key,
-        api_base: resolved?.api_base,
-    };
-    for (const [k, v] of Object.entries(input.llm_options || {})) {
-        if (v !== undefined && v !== null && v !== "") llm[k] = v;
+    const overrides = input.llm_options ?? {};
+    const direct = typeof overrides.model === "string" && (overrides.model as string).trim() !== "";
+    const llmSection: Record<string, unknown> = direct
+        ? {}
+        : {
+              model: `openai/${llm.model}`,
+              api_base: bridges.chat.url,
+              api_key: bridges.chat.token,
+          };
+    for (const [k, v] of Object.entries(overrides)) {
+        if (v !== undefined && v !== null && v !== "") llmSection[k] = v;
     }
-    if (!llm.model) {
-        throw new ContextGemError("LLM_UNAVAILABLE", "no LLM model is configured", 409, "Pick one under the LLM Model preference.");
+    if (!llmSection.model) {
+        throw new ContextGemError(
+            "LLM_UNAVAILABLE",
+            "llm_options needs a model when it overrides the Enconvo provider",
+            400
+        );
     }
-    job.llm = llm;
+    job.llm = llmSection;
 
-    if (config.decision_model || input.decision_model?.model) {
+    const useJev = config.decision_engine === "jev" && !direct;
+    if (useJev) {
         const dm: Record<string, unknown> = {
-            model: config.decision_model || undefined,
-            api_key: config.decision_api_key || undefined,
+            model: "typesafe/jev-latest",
+            api_base: bridges.decisions!.url,
+            api_key: bridges.decisions!.token,
         };
-        for (const [k, v] of Object.entries(input.decision_model || {})) {
-            if (v !== undefined && v !== null && v !== "") dm[k] = v;
+        if (typeof input.decision_threshold === "number") {
+            dm.decision_threshold = Math.min(1, Math.max(0, input.decision_threshold));
         }
         job.decision_model = dm;
     }
-    return job;
+    return { job, direct, decisions: useJev };
 }
 
 function redact(text: string, secrets: string[]): string {
@@ -547,7 +565,7 @@ export async function runExtractJob(job: Record<string, unknown>, timeoutMs: num
                 "EXTRACTION_FAILED",
                 message,
                 502,
-                "Check the LLM Model, LLM API Base and LLM key in the plugin preferences (or the llm overrides in the request)."
+                "Check the LLM Model preference (provider, model) and, for closed questions, the Jev decision engine; its decisions need an Enconvo Cloud sign-in with points."
             );
         }
         const tail = redact((res.stderr || res.stdout).trim().slice(-400), secrets);
@@ -558,6 +576,26 @@ export async function runExtractJob(job: Record<string, unknown>, timeoutMs: num
         } catch {
             // best effort
         }
+    }
+}
+
+/**
+ * One extraction end to end: start the bridges the request needs, run the job,
+ * always close the bridges. `llm_options.model` skips both bridges and talks to
+ * the endpoint the request names.
+ */
+export async function runExtraction(input: ExtractInput, config: Config, llm: ResolvedLlm): Promise<RunnerResult> {
+    const direct = typeof input.llm_options?.model === "string" && String(input.llm_options.model).trim() !== "";
+    const needsDecisions = config.decision_engine === "jev" && !direct;
+    const chat = direct ? null : await startChatBridge(llm.instance);
+    const decisions = needsDecisions ? await startDecisionBridge() : null;
+    try {
+        const bridges = { chat: chat ?? { url: "", token: "" }, decisions };
+        const built = buildJob(input, config, llm, bridges);
+        return await runExtractJob(built.job, timeoutMsFor(config, input.timeout_seconds));
+    } finally {
+        await chat?.close();
+        await decisions?.close();
     }
 }
 

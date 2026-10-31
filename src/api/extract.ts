@@ -1,12 +1,4 @@
-import {
-    buildJob,
-    errorResponse,
-    readJson,
-    resolveConfig,
-    runExtractJob,
-    timeoutMsFor,
-    validateInput,
-} from "../lib/env";
+import { errorResponse, readJson, resolveConfig, runExtraction, validateInput } from "../lib/env";
 import { resolveLlm } from "../lib/llm";
 import { requirePipeline } from "../lib/pipelines";
 
@@ -69,7 +61,7 @@ interface ExtractParams {
     aspects?: AspectSpec[];
     /** Typed values to extract */
     concepts?: ConceptSpec[];
-    /** llm (default), decision_model (booleans, labels and ratings only) or auto (closed concepts to the decision model, the rest to the LLM) */
+    /** llm (default), decision_model (booleans, labels and ratings only; needs the Decision Engine set to Jev) or auto (closed concepts to Jev, the rest to the LLM) */
     engine?: "llm" | "decision_model" | "auto";
     /** Build and validate the plan without calling any model */
     dry_run?: boolean;
@@ -79,10 +71,10 @@ interface ExtractParams {
     llm_provider?: string;
     /** Model for that provider, e.g. claude-haiku-5-5. Defaults to the provider's selected model */
     llm_model?: string;
-    /** Advanced LiteLLM overrides: temperature, max_tokens, reasoning_effort, output_language, system_message, num_retries (model, api_base and api_key override the Enconvo provider) */
+    /** Direct LiteLLM access to any endpoint: model, api_base, api_key, temperature, num_retries, ... Skips the Enconvo provider and both bridges; other keys also pass through as overrides */
     llm_options?: Record<string, unknown>;
-    /** Per-request decision-model overrides: model, api_key, api_base, decision_threshold */
-    decision_model?: Record<string, unknown>;
+    /** 0-1: how sure Jev must be before a yes is a yes (Decision Engine set to Jev only) */
+    decision_threshold?: number;
     /** @default 600 Seconds before the run is stopped (30-3600); defaults to the Extraction Timeout preference */
     timeout_seconds?: number;
 }
@@ -104,7 +96,7 @@ export default async function main(request: Request) {
         const input = { ...params, aspects, concepts, engine };
         validateInput(input);
         const llm = await resolveLlm({ provider: params.llm_provider, model: params.llm_model });
-        const result = await runExtractJob(buildJob(input, config, llm), timeoutMsFor(config, params.timeout_seconds));
+        const result = await runExtraction(input, config, llm);
         return Response.json(result);
     } catch (error) {
         return errorResponse(error);

@@ -302,7 +302,7 @@ def build_decision_model(cfg, role=None):
     fields = ("model", "api_key", "api_base", "decision_threshold", "timeout")
     kwargs = {k: v for k, v in (cfg or {}).items() if k in fields and v not in (None, "")}
     if not kwargs.get("model"):
-        raise SpecError("no decision model configured: set the Decision Model preference or decision_model.model")
+        raise SpecError("no decision engine configured: set the Decision Engine preference to Jev")
     if role:
         kwargs["role"] = role
     return DocumentDecisionModel(**kwargs)
@@ -475,7 +475,7 @@ def run(job):
     if engine == "decision_model":
         if not dm_configured:
             raise SpecError(
-                "engine 'decision_model' needs a decision model: set the Decision Model preference"
+                "engine 'decision_model' needs a decision engine: set the Decision Engine preference to Jev (Enconvo Cloud)"
             )
         if open_locs or aspects_specs:
             targets = (["aspects"] if aspects_specs else []) + open_locs

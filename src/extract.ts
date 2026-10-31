@@ -1,13 +1,5 @@
 import { EnconvoResponse, type RequestOptions } from "@enconvo/api";
-import {
-    buildJob,
-    explain,
-    resolveConfig,
-    runExtractJob,
-    timeoutMsFor,
-    validateInput,
-    type ExtractInput,
-} from "./lib/env";
+import { explain, resolveConfig, runExtraction, validateInput, type ExtractInput } from "./lib/env";
 import { formatResult } from "./lib/format";
 import { resolveLlm } from "./lib/llm";
 import { requirePipeline } from "./lib/pipelines";
@@ -57,7 +49,7 @@ export default async function main(request: Request) {
 
         const config = await resolveConfig(options as Record<string, unknown>);
         const llm = await resolveLlm({ provider: spec.llm_provider, model: spec.llm_model });
-        const result = await runExtractJob(buildJob(spec, config, llm), timeoutMsFor(config));
+        const result = await runExtraction(spec, config, llm);
         return EnconvoResponse.text(formatResult(result));
     } catch (error) {
         return EnconvoResponse.text(`**ContextGem error**: ${explain(error)}`);

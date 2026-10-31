@@ -111,33 +111,15 @@ export function formatStatus(report: StatusReport, setupSteps: string[] = []): s
         "",
         report.llm.error
             ? check(false, "LLM (Enconvo provider)", report.llm.error)
-            : check(true, "LLM (Enconvo provider)", `${report.llm.provider} → ${report.llm.model}${report.llm.api_base ? ` at ${report.llm.api_base}` : ""}`),
-        ...(report.llm.error
-            ? []
-            : [
-                  check(
-                      !!report.llm.key_set,
-                      "LLM key",
-                      report.llm.key_set
-                          ? "set in Enconvo's credentials"
-                          : "none stored for this provider; fine for local models, otherwise add it in Enconvo Settings › Credentials"
-                  ),
-              ]),
+            : check(true, "LLM (Enconvo provider)", `${report.llm.provider} → ${report.llm.model} · chat bridge, no keys handled`),
         check(
-            !!report.decision_model.model,
-            "Decision model",
-            report.decision_model.model || "none; engine auto sends everything to the LLM"
+            report.decision.engine === "jev",
+            "Decision engine",
+            report.decision.engine === "jev"
+                ? "Jev on Enconvo Cloud · calibrated probabilities, points, via the decision bridge"
+                : "none; closed questions go to the LLM"
         ),
     ];
-    if (report.decision_model.model) {
-        lines.push(
-            check(
-                report.decision_model.key_set,
-                "Decision model key",
-                report.decision_model.key_set ? "set" : "not set; add one under ContextGem Decision Model Key"
-            )
-        );
-    }
     lines.push("", check(report.ready, "Overall", report.ready ? "ready to extract" : "not ready"));
     if (setupSteps.length) lines.push("", "**Setup steps**", "", ...setupSteps.map((s) => `- ${s}`));
     return lines.join("\n");

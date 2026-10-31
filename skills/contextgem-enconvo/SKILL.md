@@ -1,10 +1,10 @@
 ---
 name: contextgem-enconvo
 description: >
-  Extract structured data from text and documents through the ContextGem framework: aspects and typed concepts (strings, booleans, numbers, dates, ratings, labels, JSON objects) with source references, justifications and probabilities, using the LLM providers and credentials already set up in Enconvo, or a decision model such as Jev for closed questions.
+  Structured document and text extraction with the ContextGem framework, running on your Enconvo LLM providers through a local bridge — no API keys to manage. Route closed questions to Jev on Enconvo Cloud for calibrated probabilities. Aspects and typed concepts (string, boolean, numerical, date, rating, JSON, label) come back with justifications, source references and usage stats; save reusable pipelines; extract from files with the optional docling extra.
 metadata:
   author: Iteractive Development
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # ContextGem
@@ -22,7 +22,7 @@ Prefer a normal chat answer when the user just asks a question about text; use C
 
 ## Setup
 
-Check readiness with `contextgem-enconvo/status`. If `ready` is false, POST `{}` to `contextgem-enconvo/setup` (installs a private uv-managed venv with contextgem; with `{"install_docling": true}` it also installs file support). The extraction LLM is an Enconvo provider you already have set up: the default LLM, or `llm_provider` (e.g. `anthropic`, `z_ai`, `open_ai`, a custom id like `open_ai_ab12`) with an optional `llm_model` in the extract call. Its key comes from Enconvo's credentials, so never ask the user for one. Only the optional decision model has its own preference and key.
+Check readiness with `contextgem-enconvo/status`. If `ready` is false, POST `{}` to `contextgem-enconvo/setup` (installs a private uv-managed venv with contextgem; with `{"install_docling": true}` it also installs file support). Models come from Enconvo, through per-job local bridges, so never ask the user for any key. The extraction LLM is the default LLM or `llm_provider` (e.g. `anthropic`, `z_ai`, `open_ai`, a custom id like `open_ai_ab12`) with an optional `llm_model`; every provider the app supports works, including Enconvo Cloud points models and OAuth providers. Closed questions (booleans, labels, ratings) can go to Jev instead: set the plugin's **Decision Engine** preference to Jev (Enconvo Cloud) — decisions bill points, calibrated probabilities come back on the items, no TypeSafe key exists.
 
 ## Spec shape
 
@@ -41,8 +41,8 @@ Reuse a schema across runs: save it once with `contextgem-enconvo/pipeline_save`
 
 ## Notes
 
-- Engine choice: `llm` (default) for everything; `decision_model` only for booleans/labels/ratings + aspects; `auto` routes closed concepts to the decision model and the rest to the LLM.
+- Engine choice: `llm` (default) for everything; `decision_model` only for booleans/labels/ratings (needs Decision Engine set to Jev); `auto` routes closed concepts to Jev and the rest to the LLM.
 - `dry_run: true` builds the plan (validation, document build) without calling any model — cheap preflight.
-- Only the decision model is a LiteLLM string (e.g. `typesafe/jev-latest`); `llm_options` takes advanced LiteLLM overrides (temperature, max_tokens, reasoning_effort, output_language) for the LLM.
-- An `LLM_UNAVAILABLE` error means the chosen Enconvo provider is missing or not reachable through LiteLLM; its hint says what to change.
+- `llm_options` names its own endpoint (model, api_base, api_key) and bypasses both bridges for advanced or testing use; other keys pass through as LiteLLM overrides.
+- An `LLM_UNAVAILABLE` error means the named provider does not exist (or has no model selected); its hint says what to change.
 - Extraction can take minutes on long documents; raise `timeout_seconds` (30–3600) if needed.
