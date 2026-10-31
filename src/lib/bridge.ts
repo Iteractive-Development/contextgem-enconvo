@@ -105,7 +105,10 @@ export async function startChatBridge(provider: LLMProvider): Promise<Bridge> {
             const message = answer as unknown as {
                 content?: unknown;
                 usage_metadata?: { input_tokens?: number; output_tokens?: number; total_tokens?: number };
-                response_metadata?: { token_usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } };
+                response_metadata?: {
+                    model_name?: string;
+                    token_usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+                };
             };
             const usageMeta = message.usage_metadata;
             const tokenUsage = message.response_metadata?.token_usage;
@@ -121,7 +124,9 @@ export async function startChatBridge(provider: LLMProvider): Promise<Bridge> {
                 id: `bridge-${crypto.randomUUID()}`,
                 object: "chat.completion",
                 created: Math.floor(Date.now() / 1000),
-                model: body.model ?? "enconvo",
+                // Echo the model the provider actually used when it says so, so usage
+                // stats report the real model, not the label the runner sent.
+                model: message.response_metadata?.model_name ?? body.model ?? "enconvo",
                 choices: [
                     {
                         index: 0,
