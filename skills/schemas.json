@@ -12,14 +12,391 @@
     "routePath": "contextgem-enconvo/doctor"
   },
   {
+    "name": "extract_structured",
+    "title": "extract_structured",
+    "description": "Extract aspects and typed concepts from a document with ContextGem. Returns each concept's and aspect's items with values, optional justifications, source references and decision-model probabilities, plus usage stats. Needs the plugin's environment: check /status, create it with /setup. @param {Request} request - Request object, body is {@link ExtractParams}",
+    "routePath": "contextgem-enconvo/extract_structured",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The document text. Give this or file_path"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Absolute path of a file to convert with Docling (needs the docling extra). Give this or text"
+        },
+        "pipeline": {
+          "type": "string",
+          "description": "Name of a pipeline saved with pipeline_save; its aspects, concepts and engine apply unless the request sets its own"
+        },
+        "aspects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Short, specific name, e.g. payment_terms"
+              },
+              "description": {
+                "type": "string",
+                "description": "What the section covers"
+              },
+              "aspects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Short, specific name, e.g. payment_terms"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "What the section covers"
+                    },
+                    "aspects": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": ""
+                      },
+                      "description": "Nested aspects found within this one"
+                    },
+                    "concepts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": ""
+                      },
+                      "description": "Concepts extracted from this aspect's text"
+                    },
+                    "reference_depth": {
+                      "type": "string",
+                      "description": "What a reference is: paragraphs or sentences",
+                      "enum": [
+                        "paragraphs",
+                        "sentences"
+                      ]
+                    },
+                    "add_justifications": {
+                      "type": "boolean",
+                      "description": "Attach the model's justification to each item"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "description": "Nested aspects found within this one"
+              },
+              "concepts": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": "",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Value type: string, boolean, numerical, date, rating, json_object or label",
+                      "enum": [
+                        "string",
+                        "boolean",
+                        "numerical",
+                        "date",
+                        "rating",
+                        "json_object",
+                        "label"
+                      ]
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Short, specific name, e.g. invoice_number"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "What the value means and where it appears; be specific"
+                    },
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "description": ""
+                      },
+                      "description": "label only: the allowed labels"
+                    },
+                    "classification_type": {
+                      "type": "string",
+                      "description": "label only: multi_class (exactly one) or multi_label (any number). Default multi_class",
+                      "enum": [
+                        "multi_class",
+                        "multi_label"
+                      ]
+                    },
+                    "rating_scale": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "description": ""
+                      },
+                      "description": "rating only: the inclusive scale, e.g. [1, 5]"
+                    },
+                    "numeric_type": {
+                      "type": "string",
+                      "description": "numerical only: int, float or any. Default any",
+                      "enum": [
+                        "int",
+                        "float",
+                        "any"
+                      ]
+                    },
+                    "structure": {
+                      "type": "object",
+                      "description": "json_object only: field names to types (string, integer, number, boolean, array, object, any); objects nest, a one-item list types an array's items"
+                    },
+                    "add_references": {
+                      "type": "boolean",
+                      "description": "Attach the source text each item came from"
+                    },
+                    "reference_depth": {
+                      "type": "string",
+                      "description": "What a reference is: paragraphs or sentences",
+                      "enum": [
+                        "paragraphs",
+                        "sentences"
+                      ]
+                    },
+                    "add_justifications": {
+                      "type": "boolean",
+                      "description": "Attach the model's justification to each item"
+                    },
+                    "justification_depth": {
+                      "type": "string",
+                      "description": "How detailed a justification is: brief, balanced or comprehensive",
+                      "enum": [
+                        "brief",
+                        "balanced",
+                        "comprehensive"
+                      ]
+                    },
+                    "singular_occurrence": {
+                      "type": "boolean",
+                      "description": "string only: expect one value per document rather than a list"
+                    },
+                    "examples": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": ""
+                      },
+                      "description": "Example values that sharpen extraction"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "name",
+                    "description"
+                  ]
+                },
+                "description": "Concepts extracted from this aspect's text"
+              },
+              "reference_depth": {
+                "type": "string",
+                "description": "What a reference is: paragraphs or sentences",
+                "enum": [
+                  "paragraphs",
+                  "sentences"
+                ]
+              },
+              "add_justifications": {
+                "type": "boolean",
+                "description": "Attach the model's justification to each item"
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          },
+          "description": "Document sections to find"
+        },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": "",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Value type: string, boolean, numerical, date, rating, json_object or label",
+                "enum": [
+                  "string",
+                  "boolean",
+                  "numerical",
+                  "date",
+                  "rating",
+                  "json_object",
+                  "label"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "description": "Short, specific name, e.g. invoice_number"
+              },
+              "description": {
+                "type": "string",
+                "description": "What the value means and where it appears; be specific"
+              },
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": ""
+                },
+                "description": "label only: the allowed labels"
+              },
+              "classification_type": {
+                "type": "string",
+                "description": "label only: multi_class (exactly one) or multi_label (any number). Default multi_class",
+                "enum": [
+                  "multi_class",
+                  "multi_label"
+                ]
+              },
+              "rating_scale": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "description": ""
+                },
+                "description": "rating only: the inclusive scale, e.g. [1, 5]"
+              },
+              "numeric_type": {
+                "type": "string",
+                "description": "numerical only: int, float or any. Default any",
+                "enum": [
+                  "int",
+                  "float",
+                  "any"
+                ]
+              },
+              "structure": {
+                "type": "object",
+                "description": "json_object only: field names to types (string, integer, number, boolean, array, object, any); objects nest, a one-item list types an array's items"
+              },
+              "add_references": {
+                "type": "boolean",
+                "description": "Attach the source text each item came from"
+              },
+              "reference_depth": {
+                "type": "string",
+                "description": "What a reference is: paragraphs or sentences",
+                "enum": [
+                  "paragraphs",
+                  "sentences"
+                ]
+              },
+              "add_justifications": {
+                "type": "boolean",
+                "description": "Attach the model's justification to each item"
+              },
+              "justification_depth": {
+                "type": "string",
+                "description": "How detailed a justification is: brief, balanced or comprehensive",
+                "enum": [
+                  "brief",
+                  "balanced",
+                  "comprehensive"
+                ]
+              },
+              "singular_occurrence": {
+                "type": "boolean",
+                "description": "string only: expect one value per document rather than a list"
+              },
+              "examples": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "description": ""
+                },
+                "description": "Example values that sharpen extraction"
+              }
+            },
+            "required": [
+              "type",
+              "name",
+              "description"
+            ]
+          },
+          "description": "Typed values to extract"
+        },
+        "engine": {
+          "type": "string",
+          "description": "llm (default), decision_model (booleans, labels and ratings only; needs the Decision Engine set to Jev) or auto (closed concepts to Jev, the rest to the LLM)",
+          "enum": [
+            "llm",
+            "decision_model",
+            "auto"
+          ]
+        },
+        "dry_run": {
+          "type": "boolean",
+          "description": "Build and validate the plan without calling any model"
+        },
+        "segmentation": {
+          "type": "string",
+          "description": "How the text is split into paragraphs: newlines (default) or sat (a model)",
+          "enum": [
+            "newlines",
+            "sat"
+          ]
+        },
+        "llm_provider": {
+          "type": "string",
+          "description": "Enconvo LLM provider to use, e.g. anthropic, z_ai, open_ai or a custom one such as open_ai_ab12. Defaults to the user's default LLM in Enconvo"
+        },
+        "llm_model": {
+          "type": "string",
+          "description": "Model for that provider, e.g. claude-haiku-5-5. Defaults to the provider's selected model"
+        },
+        "llm_options": {
+          "type": "object",
+          "description": "Direct LiteLLM access to any endpoint: model, api_base, api_key, temperature, num_retries, ... Skips the Enconvo provider and both bridges; other keys also pass through as overrides"
+        },
+        "decision_threshold": {
+          "type": "number",
+          "description": "0-1: how sure Jev must be before a yes is a yes (Decision Engine set to Jev only)"
+        },
+        "timeout_seconds": {
+          "type": "number",
+          "description": "Seconds before the run is stopped (30-3600); defaults to the Extraction Timeout preference",
+          "default": 600
+        }
+      },
+      "required": []
+    }
+  },
+  {
     "name": "pipeline_delete",
     "title": "pipeline_delete",
     "description": "Delete a saved extraction pipeline by name. @param {Request} request - Request object, body is {@link PipelineDeleteParams}",
     "routePath": "contextgem-enconvo/pipeline_delete",
     "parameters": {
       "type": "object",
-      "properties": {},
-      "required": []
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the saved pipeline to delete"
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   },
   {
@@ -40,8 +417,45 @@
     "routePath": "contextgem-enconvo/pipeline_save",
     "parameters": {
       "type": "object",
-      "properties": {},
-      "required": []
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Pipeline name: a slug of lowercase letters, digits and dashes, up to 64 characters"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this pipeline extracts and from which kind of document"
+        },
+        "aspects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": ""
+          },
+          "description": "Document sections to find (same shape as extract's aspects)"
+        },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "description": ""
+          },
+          "description": "Typed values to extract (same shape as extract's concepts)"
+        },
+        "engine": {
+          "type": "string",
+          "description": "",
+          "enum": [
+            "llm",
+            "decision_model",
+            "auto"
+          ],
+          "default": "llm Default engine: llm, decision_model or auto"
+        }
+      },
+      "required": [
+        "name"
+      ]
     }
   },
   {
@@ -51,7 +465,16 @@
     "routePath": "contextgem-enconvo/setup",
     "parameters": {
       "type": "object",
-      "properties": {},
+      "properties": {
+        "install_docling": {
+          "type": "boolean",
+          "description": "Also install contextgem[docling] for PDF, DOCX, PPTX, XLSX and HTML support (large download). Defaults to the Install Docling preference"
+        },
+        "python_bin": {
+          "type": "string",
+          "description": "Python to build the venv from; defaults to the Python Binary preference, then auto-detect of 3.11-3.14"
+        }
+      },
       "required": []
     }
   },

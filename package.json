@@ -137,15 +137,15 @@
         },
         {
           "description": "Extraction runs through the chat bridge on any Enconvo provider.",
-          "prompt": "With any Enconvo LLM provider selected, POST a short invoice text with a string concept (add_justifications true, add_references true) to /api/contextgem-enconvo/extract.",
+          "prompt": "With any Enconvo LLM provider selected, POST a short invoice text with a string concept (add_justifications true, add_references true) to /api/contextgem-enconvo/extract_structured.",
           "expected_behavior": "Items come back with value, justification and reference paragraphs; the request carries no API key, and stats.llm.usage reports tokens from the provider.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Jev answers closed questions through the decision bridge.",
           "prompt": "With the Decision Engine set to Jev and engine auto, POST a contract clause with a boolean concept.",
           "expected_behavior": "The closed question is relayed to Enconvo Cloud with the app session token; items carry calibrated probabilities, and no TypeSafe key exists anywhere in the plugin.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Saved pipelines round-trip.",
@@ -163,7 +163,7 @@
           "description": "Attached files convert with docling when the extra is installed.",
           "prompt": "With Install Docling enabled and setup re-run, attach a PDF and give aspects to extract.",
           "expected_behavior": "The file converts through docling and extraction returns items; without the extra the error names DOCLING_MISSING and the preference to enable.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         }
       ],
       "negative": [
@@ -171,43 +171,43 @@
           "description": "No document is rejected before any model runs.",
           "prompt": "POST /extract with only a concept and no text or file_path.",
           "expected_behavior": "HTTP 400 BAD_INPUT \"provide text or file_path\"; nothing is billed.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Bad specs are named, not discovered by the model.",
           "prompt": "POST /extract with dry_run true and a rating concept without rating_scale.",
           "expected_behavior": "HTTP 400 BAD_SPEC naming the concept and the missing field.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "The decision engine is demanded, not silently ignored.",
           "prompt": "With Decision Engine off, POST /extract with engine decision_model and a boolean concept.",
           "expected_behavior": "HTTP 400 BAD_SPEC telling the user to set the Decision Engine preference to Jev; no LLM call happens.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "An unknown provider is refused, never silently substituted.",
           "prompt": "POST /extract with llm_provider set to a name that is not configured.",
           "expected_behavior": "HTTP 409 LLM_UNAVAILABLE naming the provider and where to fix it.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Jev without a Cloud session fails with the fix.",
           "prompt": "With Decision Engine set to Jev and Enconvo Cloud signed out, run a boolean extraction.",
           "expected_behavior": "A typed error naming the Enconvo Cloud sign-in; never a hang and never a leaked bridge token.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Secrets never reach the surface.",
           "prompt": "Force a failure (bad endpoint via llm_options) and read the whole error response.",
           "expected_behavior": "Bridge tokens and any api_key are absent from the response body and from what the runner prints.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         },
         {
           "description": "Evidence flags on Jev-extracted targets are rejected up front.",
           "prompt": "With Decision Engine set to Jev, POST an auto-engine extraction with a boolean concept carrying add_justifications true and dry_run true.",
           "expected_behavior": "HTTP 400 BAD_SPEC naming the concept and the two fixes (drop the flags or set model_role extractor); no decision is billed.",
-          "tools_triggered": "contextgem-enconvo/extract"
+          "tools_triggered": "contextgem-enconvo/extract_structured"
         }
       ]
     },

@@ -4,7 +4,7 @@ description: >
   Structured document and text extraction with the ContextGem framework, running on your Enconvo LLM providers through a local bridge — no API keys to manage. Route closed questions to Jev on Enconvo Cloud for calibrated probabilities. Aspects and typed concepts (string, boolean, numerical, date, rating, JSON, label) come back with justifications, source references and usage stats; save reusable pipelines; extract from files with the optional docling extra.
 metadata:
   author: Iteractive Development
-  version: "1.1.0"
+  version: "1.0.0"
 ---
 
 # ContextGem

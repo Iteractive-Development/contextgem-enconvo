@@ -6,7 +6,7 @@ By [Iteractive Development](https://iteractive.dev).
 
 ## What it gives you
 
-- **`contextgem-enconvo/extract`**: the core API route. Takes `text` (or `file_path` with the docling extra), `aspects`, `concepts`, `engine` (`llm`, `decision_model` or `auto`) and `dry_run`. Returns extracted values with optional references, justifications, probabilities and usage stats.
+- **`contextgem-enconvo/extract_structured`**: the core API route. Takes `text` (or `file_path` with the docling extra), `aspects`, `concepts`, `engine` (`llm`, `decision_model` or `auto`) and `dry_run`. Returns extracted values with optional references, justifications, probabilities and usage stats.
 - **Pipelines**: `pipeline_save`, `pipeline_list` and `pipeline_delete` name an aspects/concepts spec once so `extract` can reuse it with `pipeline: "<name>"`.
 - **`contextgem-enconvo/status`** and **`contextgem-enconvo/setup`**: environment health and a one-shot install into a private, uv-managed venv in the plugin's support directory. Nothing touches your system Python.
 - **ContextGem Extract** command: run an extraction from the Smart Bar with a JSON spec or an attached file.
@@ -35,7 +35,7 @@ The job and both bridge tokens travel to the Python runner on stdin (nothing sen
 ## Example
 
 ```json
-POST contextgem-enconvo/extract
+POST contextgem-enconvo/extract_structured
 {
   "text": "Acme Corp invoice INV-2031, dated March 3, 2026... total $4,200, paid in full.",
   "concepts": [
