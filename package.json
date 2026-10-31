@@ -220,9 +220,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@enconvo/api": "latest"
-  },
-  "devDependencies": {
+    "@enconvo/api": "latest",
     "@types/node": "^22.0.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
