@@ -214,11 +214,11 @@ export async function startDecisionBridge(upstream = SYSTEMONE_URL): Promise<Bri
             }
             const text = await upstreamRes.text();
             if (upstreamRes.status === 409) {
-                sendJson(res, 409, { error: { message: "Not enough Enconvo Cloud points for this decision." } });
+                sendJson(res, 409, { error: { message: "decision-bridge: not enough Enconvo Cloud points for this decision." } });
                 return;
             }
             if ([401, 403, 444].includes(upstreamRes.status)) {
-                sendJson(res, 401, { error: { message: "Enconvo Cloud session is invalid; sign in again to use Jev." } });
+                sendJson(res, 401, { error: { message: "decision-bridge: Enconvo Cloud session is invalid; sign in again to use Jev." } });
                 return;
             }
             res.writeHead(upstreamRes.status, { "content-type": "application/json" });
@@ -226,7 +226,7 @@ export async function startDecisionBridge(upstream = SYSTEMONE_URL): Promise<Bri
         } catch (error) {
             sendJson(res, 502, {
                 error: {
-                    message: `Jev gateway unreachable: ${error instanceof Error ? error.message : String(error)}`,
+                    message: `decision-bridge: Jev gateway unreachable: ${error instanceof Error ? error.message : String(error)}`,
                 },
             });
         }

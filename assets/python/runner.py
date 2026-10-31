@@ -448,6 +448,9 @@ def model_stats(model):
 
 
 def run(job):
+    import copy
+
+    pristine = copy.deepcopy(job)
     dry_run = bool(job.get("dry_run"))
     engine = job.get("engine") or "llm"
     if engine not in ("llm", "decision_model", "auto"):
@@ -546,29 +549,48 @@ def run(job):
         return {"ok": True, "dry_run": True, "plan": plan}
 
     stats = {}
-    if use_group:
-        from contextgem import DocumentModelGroup
+    try:
+        if use_group:
+            from contextgem import DocumentModelGroup
 
-        stage("extracting with model group (LLM + decision model)")
-        llm = build_llm(job.get("llm"))
-        dm = build_decision_model(dm_cfg, role="decider")
-        group = DocumentModelGroup(models=[llm, dm])
-        group.extract_all(doc)
-        stats["llm"] = model_stats(llm)
-        stats["decision_model"] = model_stats(dm)
-        used_engine = "model_group"
-    elif engine == "decision_model" or (engine == "auto" and dm_configured and not has_open):
-        stage("extracting with the decision model")
-        dm = build_decision_model(dm_cfg)
-        dm.extract_all(doc)
-        stats["decision_model"] = model_stats(dm)
-        used_engine = "decision_model"
-    else:
-        stage("extracting with the LLM")
-        llm = build_llm(job.get("llm"))
-        llm.extract_all(doc)
-        stats["llm"] = model_stats(llm)
-        used_engine = "llm"
+            stage("extracting with model group (LLM + decision model)")
+            llm = build_llm(job.get("llm"))
+            dm = build_decision_model(dm_cfg, role="decider")
+            group = DocumentModelGroup(models=[llm, dm])
+            group.extract_all(doc)
+            stats["llm"] = model_stats(llm)
+            stats["decision_model"] = model_stats(dm)
+            used_engine = "model_group"
+        elif engine == "decision_model" or (engine == "auto" and dm_configured and not has_open):
+            stage("extracting with the decision model")
+            dm = build_decision_model(dm_cfg)
+            dm.extract_all(doc)
+            stats["decision_model"] = model_stats(dm)
+            used_engine = "decision_model"
+        else:
+            stage("extracting with the LLM")
+            llm = build_llm(job.get("llm"))
+            llm.extract_all(doc)
+            stats["llm"] = model_stats(llm)
+            used_engine = "llm"
+    except Exception as e:
+        # With engine "auto" the decision model is an optimization, not a requirement:
+        # if Jev is unavailable (no sign-in, no points, gateway down) the run must still
+        # answer, so retry the whole document on the LLM and say so. An explicit
+        # engine "decision_model" keeps its error.
+        reason = str(e).lower()
+        if engine != "auto" or not dm_configured or not (
+            "decision-bridge" in reason or "jev" in reason or "typesafe" in reason
+        ):
+            raise
+        stage("decision engine unavailable; retrying on the LLM")
+        retry = copy.deepcopy(pristine)
+        retry["engine"] = "llm"
+        retry.pop("decision_model", None)
+        result = run(retry)
+        note = f"decision engine unavailable ({str(e).splitlines()[0][:160]}); closed questions were answered by the LLM without calibrated probabilities"
+        result["notes"] = (result.get("notes") or []) + [note]
+        return result
 
     stage("serializing results")
     result = {

@@ -85,10 +85,10 @@
     {
       "name": "decision_engine",
       "title": "Decision Engine",
-      "description": "Route closed questions (booleans, labels, ratings) to Jev through Enconvo Cloud for calibrated probabilities, billed as points. Uses the app's own sign-in; no key to manage.",
+      "description": "On by default: route closed questions (booleans, labels, ratings) to Jev through Enconvo Cloud for calibrated probabilities, billed as points. Uses the app's own sign-in; no key to manage. If Jev is unavailable, auto runs fall back to the LLM.",
       "type": "dropdown",
       "required": false,
-      "default": "",
+      "default": "jev",
       "data": [
         {
           "title": "None — LLM only",

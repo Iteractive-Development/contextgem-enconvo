@@ -22,7 +22,7 @@ Prefer a normal chat answer when the user just asks a question about text; use C
 
 ## Setup
 
-Check readiness with `contextgem-enconvo/status`. If `ready` is false, POST `{}` to `contextgem-enconvo/setup` (installs a private uv-managed venv with contextgem; with `{"install_docling": true}` it also installs file support). Models come from Enconvo, through per-job local bridges, so never ask the user for any key. The extraction LLM is the default LLM or `llm_provider` (e.g. `anthropic`, `z_ai`, `open_ai`, a custom id like `open_ai_ab12`) with an optional `llm_model`; every provider the app supports works, including Enconvo Cloud points models and OAuth providers. Closed questions (booleans, labels, ratings) can go to Jev instead: set the plugin's **Decision Engine** preference to Jev (Enconvo Cloud) — decisions bill points, calibrated probabilities come back on the items, no TypeSafe key exists.
+Check readiness with `contextgem-enconvo/status`. If `ready` is false, POST `{}` to `contextgem-enconvo/setup` (installs a private uv-managed venv with contextgem; with `{"install_docling": true}` it also installs file support). Models come from Enconvo, through per-job local bridges, so never ask the user for any key. The extraction LLM is the default LLM or `llm_provider` (e.g. `anthropic`, `z_ai`, `open_ai`, a custom id like `open_ai_ab12`) with an optional `llm_model`; every provider the app supports works, including Enconvo Cloud points models and OAuth providers. Closed questions (booleans, labels, ratings) go to Jev by default (the **Decision Engine** preference is Jev, Enconvo Cloud — native to every Enconvo): decisions bill points, calibrated probabilities come back on the items, no TypeSafe key exists. If Jev is unavailable, `engine: "auto"` runs fall back to the LLM and add a `notes` entry.
 
 ## Spec shape
 
@@ -41,7 +41,7 @@ Reuse a schema across runs: save it once with `contextgem-enconvo/pipeline_save`
 
 ## Notes
 
-- Engine choice: `llm` (default) for everything; `decision_model` only for booleans/labels/ratings (needs Decision Engine set to Jev); `auto` routes closed concepts to Jev and the rest to the LLM.
+- Engine choice: `llm` for everything; `auto` (recommended) routes closed concepts to Jev and the rest to the LLM; `decision_model` only for booleans/labels/ratings (needs Decision Engine on, which is the default).
 - `dry_run: true` builds the plan (validation, document build) without calling any model — cheap preflight.
 - `llm_options` names its own endpoint (model, api_base, api_key) and bypasses both bridges for advanced or testing use; other keys pass through as LiteLLM overrides.
 - An `LLM_UNAVAILABLE` error means the named provider does not exist (or has no model selected); its hint says what to change.

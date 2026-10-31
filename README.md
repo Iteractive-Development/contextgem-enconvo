@@ -22,14 +22,14 @@ Every model the plugin uses is one you already have in Enconvo, reached through 
 - API routes use your default LLM, or `llm_provider` (an Enconvo provider id such as `anthropic`, `z_ai`, `open_ai`, or a custom one such as `open_ai_ab12`) with an optional `llm_model`. An unknown name fails with `LLM_UNAVAILABLE` rather than silently substituting another provider.
 - `llm_options: { model, api_base, api_key, ... }` bypasses both bridges and talks to any endpoint you name directly (advanced; also used for testing).
 
-**Decision bridge (Jev, optional).** Closed questions — booleans, labels, ratings — can go to Jev for calibrated probabilities. Set the **Decision Engine** preference to **Jev (Enconvo Cloud)**: the runner's decision model points at a second localhost endpoint that relays to Enconvo Cloud's System One gateway (the same one the app's own judge/classify workflow steps use), authenticating with the app's session. Decisions bill Enconvo Cloud points; there is no TypeSafe key to manage. `engine: "auto"` sends closed concepts to Jev and open ones to the LLM; `decision_threshold` (0-1) tunes how sure Jev must be.
+**Decision bridge (Jev, on by default).** Closed questions — booleans, labels, ratings — can go to Jev for calibrated probabilities. The **Decision Engine** preference defaults to **Jev (Enconvo Cloud)**: the runner's decision model points at a second localhost endpoint that relays to Enconvo Cloud's System One gateway (the same one the app's own judge/classify workflow steps use), authenticating with the app's session. Decisions bill Enconvo Cloud points; there is no TypeSafe key to manage. `engine: "auto"` sends closed concepts to Jev and open ones to the LLM; `decision_threshold` (0-1) tunes how sure Jev must be.
 
 The job and both bridge tokens travel to the Python runner on stdin (nothing sensitive touches disk), and tokens and keys are redacted from any error text.
 
 ## Setup
 
 1. Install the plugin, then run **ContextGem Doctor** with the input `setup` (or POST `{}` to `contextgem-enconvo/setup`). The first run creates the venv and installs contextgem.
-2. Optional: set **Decision Engine** to **Jev (Enconvo Cloud)** (needs an Enconvo Cloud sign-in with points); then `engine: "auto"` sends booleans, labels and ratings to Jev for calibrated probabilities.
+2. **Decision Engine** is on (**Jev via Enconvo Cloud**) by default; `engine: "auto"` sends booleans, labels and ratings to Jev for calibrated probabilities. If Jev is unavailable (not signed in, out of points), auto runs answer those questions on the LLM instead and say so in `notes`.
 3. Optional: enable **Install Docling** and re-run setup for PDF, DOCX, PPTX, XLSX and HTML file support (large download).
 
 ## Example
