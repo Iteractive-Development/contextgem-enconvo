@@ -65,16 +65,5 @@
       "properties": {},
       "required": []
     }
-  },
-  {
-    "name": "zz_probe 2",
-    "title": "zz_probe 2",
-    "description": "",
-    "routePath": "contextgem-enconvo/zz_probe 2",
-    "parameters": {
-      "type": "object",
-      "properties": {},
-      "required": []
-    }
   }
 ]
